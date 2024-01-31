@@ -1,50 +1,60 @@
 import sqlite3
-
 import streamlit as st
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from enum import Enum
 import streamlit_pydantic as sp
 
-class Task(BaseModel):
-    name: str
-    description: str
-    is_done: bool
+class ProgressValue(str, Enum):
+    UNF = "unfamiliar"
+    REC = "recognized"
+    UND = "understood"
+    MAS = "mastered"
 
-con = sqlite3.connect("todoapp.sqlite", isolation_level=None)
+class WordBank(BaseModel):
+    word: str
+    POS: str
+    definition: str
+    progress: ProgressValue = Field(
+        ..., description="Allows multiple items from a set."
+    )
+
+con = sqlite3.connect("wordbank.sqlite", isolation_level=None)
 cur = con.cursor()
 
 cur.execute(
     """
-    CREATE TABLE IF NOT EXISTS tasks (
+    CREATE TABLE IF NOT EXISTS word_list (
         id INTEGER PRIMARY KEY,
-        name TEXT,
-        description TEXT,
-        is_done BOOLEAN
+        word TEXT,
+        POS TEXT,
+        definition TEXT,
+        progress TEXT
     )
     """
 )
 
-def toggle_is_done(is_done, row):
+def update_progress(progress, row):
     cur.execute(
         """
-        UPDATE tasks SET is_done = ? WHERE id = ?
+        UPDATE word SET progress = ?
         """,
-        (is_done, row[0]),
+        (progress, row[0]),
     )
 
 def main():
-    st.title("To-Do ✨")
-    data = sp.pydantic_form(key="task_form", model=Task)
+    st.title("Word Bank 🔡")
+    data = sp.pydantic_form(key="word_form", model=WordBank)
     if data:
         cur.execute(
             """
-            INSERT INTO tasks (name, description, is_done) VALUES (?, ?, ?)
+            INSERT INTO word_list (word, POS, definition, progress) VALUES (?, ?, ?, ?)
             """,
-            (data.name, data.description, data.is_done),
+            (data.word, data.POS, data.definition, data.progress),
         )
 
     data = cur.execute(
         """
-        SELECT * FROM tasks
+        SELECT * FROM word_list
         """
     ).fetchall()
 
@@ -57,15 +67,33 @@ def main():
     #     )
     #     return
 
-    cols = st.columns(3)
-    cols[0].write("Status")
-    cols[1].write("Task")
-    cols[2].write("Description")
+    cols = st.columns(4)
+    cols[0].write("Progress")
+    cols[1].write("Word")
+    cols[2].write("POS")
+    cols[3].write("Definition")
+
+    def get_progress_color(progress):
+        if progress == "unfamiliar":
+            return "#F76F65"
+        elif progress == "recognized":
+            return "#F3A738"
+        elif progress == "understood":
+            return "#FDF984"
+        elif progress == "mastered":
+            return "#94C747"
+        else:
+            return "black"
+    
     for row in data:
-        cols = st.columns(3)
-        cols[0].checkbox('is_done', row[3], label_visibility='hidden', key=row[0], on_change=toggle_is_done, args=(not row[3], row))
+        progress_color = get_progress_color(row[4])
+        cols = st.columns(4)
+
+        cols[0].write(f'<div style="display: inline-block; padding: 6px 10px; background-color:{progress_color}; border-radius: 10px;">{row[4]}</div>', unsafe_allow_html=True)
         cols[1].write(row[1])
         cols[2].write(row[2])
+        cols[3].write(row[3])
+        
         # cols[2].markdown(
         #     f'<a target="_self" href="/?id=123" style="display: inline-block; padding: 6px 10px; background-color: #4CAF50; color: white; text-align: center; text-decoration: none; font-size: 12px; border-radius: 4px;">Action Text on Button</a>',
         #     unsafe_allow_html=True,
