@@ -33,24 +33,40 @@ cur.execute(
     """
 )
 
-def update_progress(progress, row):
+def update_progress(progress, id):
     cur.execute(
         """
-        UPDATE word SET progress = ?
+        UPDATE word_list SET progress = ? WHERE id = ?
         """,
-        (progress, row[0]),
+        (progress, id),
     )
 
-def main():
-    st.title("Word Bank 🔡")
-    data = sp.pydantic_form(key="word_form", model=WordBank)
-    if data:
+def insert_word(data):
+    existing_word = cur.execute(
+        """
+        SELECT id, progress FROM word_list WHERE word = ?
+        """,
+        (data.word,),
+    ).fetchone()
+
+    if existing_word:
+        # Word already exists, update progress
+        update_progress(data.progress, existing_word[0])
+        st.info(f"Progress for **{data.word}** updated! New progress: **{data.progress.value}**", icon = "✨")
+    else:
+        # Word doesn't exist, insert a new record
         cur.execute(
             """
             INSERT INTO word_list (word, POS, definition, progress) VALUES (?, ?, ?, ?)
             """,
             (data.word, data.POS, data.definition, data.progress),
         )
+
+def main():
+    st.title("Word Bank 🔡")
+    data = sp.pydantic_form(key="word_form", model=WordBank)
+    if data:
+        insert_word(data)
 
     data = cur.execute(
         """
