@@ -1,18 +1,25 @@
-# techin510_lab3
-## Overview
+# Word Bank 🔡
 This is a vocabulary web app that allows users to manage and track their vocabulary learning progress. Users can add new words, update their progress, and filter/search for specific entries.
 
 ## How to run
 To run the application **locally**, please follow the steps below:
 1. Make sure that Python is installed on your system
 2. Clone the repo:
-`git clone https://github.com/yinyin13/techin510_lab3.git`
+```bash
+git clone https://github.com/yinyin13/techin510_lab3.git
+```
 3. Open project directory:
-`cd <where the project is cloned>`
+```bash
+cd where_the_project_is_cloned
+```
 4. Install dependencies:
-`pip install -r requirements.txt`
+```bash
+pip install -r requirements.txt
+```
 5. Run the app on local host:
-`streamlit run app.py`
+```bash
+streamlit run app.py
+```
 
 To access the web app directly online, go to [Word Bank 🔡](https://yinyin13-todo.azurewebsites.net)
 
